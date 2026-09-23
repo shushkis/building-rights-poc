@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.env*
+*.log
+
+# Regenerable API caches / raw pulls (rebuild with: python -m poc.run)
+poc/data/raw/
+poc/demo-jerusalem/_cache*.json
+*.bak

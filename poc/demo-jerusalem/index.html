@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>פער זכויות בנייה — בית הכרם, ירושלים</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  :root{
+    --bg:#11131a; --panel:#181b24; --line:#272b38;
+    --ink:#eef1f7; --mute:#9aa3b8; --accent:#e8b64c; --cyan:#8ed3e9;
+    --granted:#5fd39a; --approved:#e8b64c; --planning:#7b5cd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+  #map{position:absolute;inset:0}
+  .hud{position:absolute;z-index:5}
+
+  #banner{top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:1px;
+    background:var(--line);border-bottom:1px solid var(--line)}
+  #banner .cell{flex:1 1 150px;background:var(--panel);padding:10px 14px}
+  #banner .k{font-size:11px;color:var(--mute);letter-spacing:.04em}
+  #banner .v{font-size:21px;font-weight:700;margin-top:2px}
+  #banner .v small{font-size:12px;font-weight:400;color:var(--mute)}
+  #title{flex:1 1 100%;background:var(--panel);padding:9px 14px;
+    border-bottom:1px solid var(--line)}
+  #title b{font-size:14px}
+  #title span{color:var(--mute);font-size:12px}
+
+  #legend{bottom:22px;right:12px;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:10px 12px;font-size:12px;min-width:210px}
+  #legend .row{display:flex;align-items:center;gap:8px;margin:4px 0}
+  #legend .sw{width:16px;height:12px;border-radius:2px;flex:none}
+  #legend h4{margin:0 0 7px;font-size:12px;color:var(--mute);font-weight:600}
+  #legend hr{border:0;border-top:1px solid var(--line);margin:9px 0}
+  #legend label{display:flex;align-items:center;gap:7px;cursor:pointer;margin:5px 0}
+
+  #caveat{bottom:22px;left:12px;max-width:340px;background:var(--panel);
+    border:1px solid var(--line);border-right:3px solid var(--accent);
+    border-radius:8px;padding:10px 12px;font-size:11.5px;line-height:1.55;
+    color:var(--mute)}
+  #caveat b{color:var(--ink)}
+
+  #tabs{top:100px;right:12px;display:flex;gap:6px}
+  #tabs button{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:6px 13px;cursor:pointer;font-size:13px;font-family:inherit}
+  #tabs button.on{background:var(--accent);color:#1a1a1a;border-color:var(--accent);font-weight:600}
+
+  .sheet{position:absolute;inset:100px 0 0 0;z-index:4;background:var(--bg);
+    overflow:auto;display:none;padding:16px 18px 40px}
+  .sheet h2{font-size:17px;margin:0 0 4px}
+  .sheet p.lede{color:var(--mute);font-size:13px;line-height:1.7;margin:0 0 16px;max-width:860px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+  th{position:sticky;top:0;background:var(--panel);color:var(--mute);font-weight:600;z-index:1}
+  tbody tr:hover{background:#1e2230;cursor:pointer}
+  .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:11px;
+    border:1px solid transparent}
+  .granted{background:#123524;color:#5fd39a;border-color:#1d5c3f}
+  .approved{background:#3a3316;color:#e2c25c;border-color:#5f5224}
+  .planning{background:#2a2140;color:#b39ae8;border-color:#453370}
+  .num{font-variant-numeric:tabular-nums}
+  .up{color:#5fd39a}
+
+  .cards{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px}
+  .card{flex:1 1 210px;background:var(--panel);border:1px solid var(--line);
+    border-radius:9px;padding:12px 14px}
+  .card .k{font-size:11px;color:var(--mute)}
+  .card .v{font-size:24px;font-weight:700;margin:3px 0 2px}
+  .card .n{font-size:11.5px;color:var(--mute);line-height:1.5}
+
+  .maplibregl-popup-content{background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;padding:12px 14px;
+    font-size:13px;max-width:340px;direction:rtl;text-align:right}
+  .maplibregl-popup-tip{border-top-color:var(--panel)!important;
+    border-bottom-color:var(--panel)!important}
+  .pop h3{margin:0 0 3px;font-size:15px}
+  .pop .sub{color:var(--mute);font-size:11px;margin-bottom:9px}
+  .pop dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0}
+  .pop dt{color:var(--mute)}
+  .pop dd{margin:0;font-weight:600}
+  .pop .rule{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);
+    font-size:11px;color:var(--mute);line-height:1.5}
+  .pop code{background:#232838;padding:1px 5px;border-radius:3px;font-size:10px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="hud" id="banner">
+  <div id="title"><b>פער זכויות בנייה — בית הכרם, ירושלים</b><span id="planline"></span></div>
+  <div class="cell"><div class="k">מבנים בשכונה</div><div class="v" id="s1">—</div></div>
+  <div class="cell"><div class="k">קומות ממקור עירוני</div><div class="v" id="s2">—</div></div>
+  <div class="cell"><div class="k">יח״ד נוספות — מאושר</div><div class="v" id="s3">—</div></div>
+  <div class="cell"><div class="k">בתכנון (מוחזק בנפרד)</div><div class="v" id="s4">—</div></div>
+</div>
+
+<div class="hud" id="tabs">
+  <button id="tabMap" class="on">מפה</button>
+  <button id="tabGap">פער הזכויות</button>
+  <button id="tabRest">שאר השכונה</button>
+</div>
+
+<div class="sheet" id="sheetGap"></div>
+<div class="sheet" id="sheetRest"></div>
+
+<div class="hud" id="legend">
+  <h4>זכויות שפורסמו</h4>
+  <div class="row"><span class="sw" style="background:#5fd39a"></span> היתר הוצא</div>
+  <div class="row"><span class="sw" style="background:#e8b64c"></span> אושר / בהליך רישוי</div>
+  <div class="row"><span class="sw" style="background:#7b5cd6"></span> בתכנון בלבד — לא זכות</div>
+  <div class="row"><span class="sw" style="background:#39424e"></span> לא פורסמה זכאות</div>
+  <hr>
+  <label><input type="checkbox" id="tgPlans"> גבולות תכניות</label>
+  <label><input type="checkbox" id="tgDerived"> סמן קומות שנגזרו מגובה</label>
+</div>
+
+<div class="hud" id="caveat">
+  <b>הפער מחושב רק היכן שהעירייה כבר הכריעה.</b> קבצי התחדשות עירונית מפרסמים
+  יח״ד קיימות ויח״ד נוספות לכל נכס — זו זכות מצוטטת. עבור
+  <b id="cv1">—</b> המבנים הנותרים לא פורסמה זכאות מספרית, ולכן
+  <b>לא מחושב עבורם פער כלשהו</b>. הם נושאים את התכנית, המגרש וייעוד הקרקע —
+  מפתח החיבור, לא הכמות.
+</div>
+
+<script>
+const NUM = n => n == null ? "—" : Math.round(n).toLocaleString("he-IL");
+const TIER_COLOR = {granted:"#5fd39a", approved:"#e8b64c", planning:"#7b5cd6"};
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {
+      basemap: {
+        type: "raster",
+        tiles: ["https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}@2x.png"],
+        tileSize: 256,
+        attribution: "© Stadia Maps © OpenMapTiles © OpenStreetMap · נתונים: עיריית ירושלים"
+      }
+    },
+    layers: [{ id: "basemap", type: "raster", source: "basemap" }]
+  },
+  center: [35.1878, 31.7776],
+  zoom: 14.9
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}), "top-left");
+
+// Buildings with a published entitlement are coloured by how far that
+// entitlement actually got. Everything else is deliberately flat grey: it has
+// no gap, and shading it by floors would invite the eye to read one.
+const COLOR = ["case",
+  ["==", ["get","tier"], "granted"],  TIER_COLOR.granted,
+  ["==", ["get","tier"], "approved"], TIER_COLOR.approved,
+  ["==", ["get","tier"], "planning"], TIER_COLOR.planning,
+  "#39424e"];
+
+// Do NOT gate on map "load" or isStyleLoaded(): both wait on basemap raster
+// tiles, so a slow or blocked tile CDN would leave the polygons undrawn.
+const whenStyleReady = async () => {
+  for (let i = 0; i < 600; i++) {
+    if (map.style && map.style._loaded) return true;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return false;
+};
+
+let GJ = null;
+
+(async () => {
+  const [gj, plans, bnd, stats, gap] = await Promise.all([
+    fetch("buildings.geojson").then(r=>r.json()),
+    fetch("plans.geojson").then(r=>r.json()),
+    fetch("boundary.geojson").then(r=>r.json()),
+    fetch("stats.json").then(r=>r.json()),
+    fetch("validation.json").then(r=>r.json())
+  ]);
+  GJ = gj;
+
+  renderStats(stats);
+  renderGap(gap, stats);
+  renderRest(stats);
+
+  if (!(await whenStyleReady())) throw new Error("MapLibre style never finished loading");
+
+  map.addSource("plans", { type:"geojson", data:plans });
+  map.addLayer({ id:"plans-line", type:"line", source:"plans",
+    layout:{visibility:"none"},
+    paint:{ "line-color":"#7b5cd6", "line-width":0.7, "line-opacity":0.5 }});
+
+  map.addSource("bnd", { type:"geojson", data:bnd });
+  map.addLayer({ id:"bnd-line", type:"line", source:"bnd",
+    paint:{ "line-color":"#e8b64c", "line-width":1.4, "line-dasharray":[3,2],
+            "line-opacity":0.8 }});
+
+  map.addSource("b", { type:"geojson", data:gj });
+  // Outside the neighbourhood the bbox pull still returned buildings. Drawn
+  // faintly rather than deleted, so the edge of the analysis is visible.
+  map.addLayer({ id:"fill-out", type:"fill", source:"b",
+    filter:["==",["get","in_neighbourhood"],false],
+    paint:{ "fill-color":"#22262f", "fill-opacity":0.5 }});
+  map.addLayer({ id:"fill", type:"fill", source:"b",
+    filter:["==",["get","in_neighbourhood"],true],
+    paint:{ "fill-color":COLOR, "fill-opacity":0.88 }});
+  map.addLayer({ id:"gap-glow", type:"line", source:"b",
+    filter:["==",["get","has_gap"],true],
+    paint:{ "line-color":COLOR, "line-width":2.6, "line-opacity":0.55, "line-blur":2 }});
+  map.addLayer({ id:"derived", type:"line", source:"b",
+    filter:["all",["==",["get","in_neighbourhood"],true],
+                  ["==",["get","floors_source"],"derived"]],
+    layout:{visibility:"none"},
+    paint:{ "line-color":"#8ed3e9", "line-width":1.1, "line-opacity":0.9 }});
+  map.addLayer({ id:"line", type:"line", source:"b",
+    paint:{ "line-color":"#0d0f15", "line-width":0.3 }});
+  map.addLayer({ id:"hl", type:"line", source:"b",
+    filter:["==",["get","id"],-1],
+    paint:{ "line-color":"#ffffff", "line-width":2.4 }});
+
+  wireInteractions();
+})().catch(e => {
+  document.getElementById("s1").textContent = "שגיאה";
+  console.error("demo load failed", e);
+});
+
+function renderStats(st){
+  document.getElementById("s1").innerHTML =
+    NUM(st.buildings_analyzed) + ' <small>מתוך ' + NUM(st.buildings_in_bbox) + ' במלבן</small>';
+  document.getElementById("s2").innerHTML =
+    st.pct_municipal + '% <small>' + NUM(st.with_municipal_floors) + ' מבנים</small>';
+  document.getElementById("s3").innerHTML =
+    NUM(st.units_added_headline) + ' <small>על ' + NUM(st.buildings_headline) + ' מבנים</small>';
+  document.getElementById("s4").innerHTML =
+    NUM(st.units_added_planning) + ' <small>לא נספר בכותרת</small>';
+  document.getElementById("planline").textContent =
+    " · " + NUM(st.apartments) + " דירות · " + NUM(st.plans_overlapping) +
+    " תכניות חלות · מקור: שרת ה-GIS של עיריית ירושלים";
+  document.getElementById("cv1").textContent = NUM(st.buildings_without_entitlement);
+}
+
+function flyTo(id){
+  const f = GJ && GJ.features.find(x => x.properties.id === id);
+  map.setFilter("hl", ["==",["get","id"], id]);
+  showMap();
+  if (!f) return;
+  const cs = f.geometry.coordinates.flat(3);
+  let x=0,y=0,n=0;
+  for (let i=0;i<cs.length;i+=2){ x+=cs[i]; y+=cs[i+1]; n++; }
+  map.flyTo({center:[x/n,y/n], zoom:18.5});
+}
+
+function wireInteractions(){
+  map.on("click", "fill", e => {
+    const p = e.features[0].properties;
+    const gap = p.has_gap
+      ? `<div class="rule" style="color:${TIER_COLOR[p.tier]}">
+           <b>${NUM(p.units_added)} יח״ד נוספות</b> על ${NUM(p.units_existing)} קיימות ·
+           <span class="badge ${p.tier}">${p.tier_label}</span><br>
+           ${p.renewal_n > 1 ? p.renewal_n + " קבצי התחדשות על אותה טביעת רגל: " : ""}
+           ${p.renewal_addresses || ""}<br>מקור: ${p.renewal_kind === "tama38" ? "תמ״א 38" : "פינוי־בינוי"} · ${p.renewal_status || "—"}
+         </div>`
+      : `<div class="rule"><b>לא פורסמה זכאות מספרית למבנה הזה.</b><br>
+           תכנית <code>${p.taba || "—"}</code> · מגרש <code>${p.migrash || "—"}</code> ·
+           ייעוד <code>${p.yeud_descr || "—"}</code><br>
+           זהו מפתח החיבור לטבלת הזכויות — לא הכמות עצמה. לא מחושב פער.</div>`;
+    const src = p.floors_source === "municipal"
+      ? '<div class="rule">ספירת הקומות היא <b>רשומה עירונית</b> על מצולע המבנה.</div>'
+      : '<div class="rule" style="color:#8ed3e9">אין ספירה עירונית למבנה הזה. הקומות <b>נגזרו מגובה</b>.</div>';
+    new maplibregl.Popup({maxWidth:"350px"})
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <div class="pop">
+          <h3>${p.address || p.renewal_addresses || "ללא כתובת רשומה"}</h3>
+          <div class="sub">גוש/חלקה ${p.gush_helka || "—"}${p.legal_area ? " · חלקה " + p.legal_area + " מ״ר" : ""}</div>
+          <dl>
+            <dt>קומות</dt><dd>${p.floors ?? "—"} <span style="color:#9aa3b8;font-weight:400">(${p.floors_source === "municipal" ? "עירוני" : "נגזר"})</span></dd>
+            <dt>גובה</dt><dd>${p.height ?? "—"} מ׳</dd>
+            <dt>דירות</dt><dd>${p.apartments ?? "—"}${p.entrances ? " · " + p.entrances + " כניסות" : ""}</dd>
+          </dl>
+          ${gap}${src}
+        </div>`)
+      .addTo(map);
+  });
+  map.on("mouseenter","fill",()=>map.getCanvas().style.cursor="pointer");
+  map.on("mouseleave","fill",()=>map.getCanvas().style.cursor="");
+
+  const vis = (id,on) => map.setLayoutProperty(id,"visibility", on ? "visible" : "none");
+  document.getElementById("tgPlans").onchange = e => vis("plans-line", e.target.checked);
+  document.getElementById("tgDerived").onchange = e => vis("derived", e.target.checked);
+}
+
+function renderGap(rows, st){
+  const T = st.tiers;
+  const cards = `
+    <div class="cards">
+      <div class="card"><div class="k">היתר הוצא</div>
+        <div class="v" style="color:#5fd39a">${NUM(T.granted.units_added)}</div>
+        <div class="n">יח״ד נוספות על ${NUM(T.granted.units_existing)} קיימות,
+          ב-${T.granted.files} קבצים. זכות שכבר ניתנה.</div></div>
+      <div class="card"><div class="k">אושר / בהליך רישוי</div>
+        <div class="v" style="color:#e8b64c">${NUM(T.approved.units_added)}</div>
+        <div class="n">${T.approved.files} קבצים שאושרו בוועדת רישוי או שנפתח להם תיק היתר.</div></div>
+      <div class="card"><div class="k">כותרת — סכום השניים</div>
+        <div class="v">${NUM(st.units_added_headline)}</div>
+        <div class="n">על ${st.buildings_headline} מבנים. זה המספר היחיד שנאמר עליו "פער זכויות".</div></div>
+      <div class="card"><div class="k">בתכנון בלבד — מוחזק בנפרד</div>
+        <div class="v" style="color:#b39ae8">${NUM(T.planning.units_added)}</div>
+        <div class="n">${T.planning.files} קבצים, כולל כל מתחמי הפינוי־בינוי.
+          צנרת אמיתית — <b>אך לא זכות</b>, ולכן מחוץ לכותרת.</div></div>
+    </div>`;
+
+  const head = ["#","כתובת","גוש/חלקה","קומות","דירות","יח״ד קיימות","יח״ד נוספות","תוספת","מעמד","מקור"];
+  let html = "<thead><tr>" + head.map(h=>`<th>${h}</th>`).join("") + "</tr></thead><tbody>";
+  rows.forEach((r,i)=>{
+    html += `<tr data-id="${r.id}">
+      <td class="num">${i+1}</td>
+      <td>${r.address || "—"}</td>
+      <td class="num">${r.gush_helka || "—"}</td>
+      <td class="num">${r.floors ?? "—"}</td>
+      <td class="num">${r.apartments ?? "—"}</td>
+      <td class="num">${NUM(r.units_existing)}</td>
+      <td class="num up">+${NUM(r.units_added)}</td>
+      <td class="num">${r.uplift_pct != null ? r.uplift_pct + "%" : "—"}</td>
+      <td><span class="badge ${r.tier}">${r.tier_label}</span></td>
+      <td style="color:#9aa3b8">${r.kind === "tama38" ? "תמ״א 38" : "פינוי־בינוי"} · ${r.status || "—"}${r.placed ? "" : " · <span style='color:#e88a8a'>לא אותר מצולע</span>"}</td></tr>`;
+  });
+
+  document.getElementById("sheetGap").innerHTML = `
+    <h2>פער הזכויות — רק היכן שהעירייה הכריעה</h2>
+    <p class="lede">קבצי ההתחדשות העירונית של ירושלים מפרסמים, לכל נכס, כמה יחידות דיור
+      קיימות וכמה מותר להוסיף. ההפרש הזה הוא פער זכויות מצוטט — לא מודל. מה שהוא
+      <b>אינו</b>: זכאות אחידה לכל השכונה. שורה אחת לכל קובץ, כי הקובץ הוא היחידה
+      שעליה העירייה מכריעה; מצולע אחד יכול לשאת כמה קבצים ולכן מספר השורות גדול
+      ממספר המבנים. הטבלה ממוינת לפי מעמד — מה שכבר קיבל היתר בראש. קבצים בודדים
+      אינם ניתנים למיקום על מצולע מבנה; הם מסומנים ככאלה ונספרים בכל זאת, כדי
+      שסכום הטבלה יתאים לכותרת.</p>
+    ${cards}
+    <table>${html}</tbody></table>`;
+
+  document.querySelectorAll("#sheetGap tbody tr").forEach(tr=>{
+    tr.onclick = () => flyTo(Number(tr.dataset.id));
+  });
+}
+
+function renderRest(st){
+  const cls = Object.entries(st.landuse_classes)
+    .map(([k,v]) => `<tr><td>${k}</td><td class="num">${v}</td><td class="num">—</td><td class="num">—</td></tr>`)
+    .join("");
+  const ho = st.fallback_heldout;
+  document.getElementById("sheetRest").innerHTML = `
+    <h2>שאר השכונה — מה יש, ומה עוד חסר</h2>
+    <p class="lede">${NUM(st.buildings_without_entitlement)} מבנים אינם מכוסים על ידי אף קובץ
+      התחדשות, ולכן לא מחושב עבורם פער. הם <b>כן</b> נושאים את מפתח החיבור: התכנית
+      החלה, מספר המגרש בתוכה, וסיווג ייעוד הקרקע. מה שחסר אינו 313 מסמכי תכנית —
+      אלא טבלת המרה מסיווג לכמות, כ-20 שורות. זו בדיוק אותה מלאכה שנעשתה עבור
+      רובע 3 בתל אביב, והיא לא נעשתה כאן במכוון.</p>
+    <div class="cards">
+      <div class="card"><div class="k">נושאים מפתח חיבור מלא</div>
+        <div class="v">${NUM(st.with_join_key)}</div>
+        <div class="n">מתוך ${NUM(st.buildings_without_entitlement)} — תכנית + מגרש + ייעוד.</div></div>
+      <div class="card"><div class="k">קומות ממקור עירוני</div>
+        <div class="v">${st.pct_municipal}%</div>
+        <div class="n">${NUM(st.with_municipal_floors)} מבנים. רק ${NUM(st.with_derived_only)}
+          נזקקים למודל גובה כלל.</div></div>
+      <div class="card"><div class="k">מודל הגיבוי — נבדק</div>
+        <div class="v">${ho.within1_pct}%</div>
+        <div class="n">${st.median_m_per_floor} מ׳ לקומה, הותאם על ${NUM(st.fallback_train_n)}
+          ונבדק על ${NUM(ho.n)} שלא נראו: ${ho.exact_pct}% מדויק, שגיאה ${ho.mae},
+          הטיה ${ho.bias > 0 ? "+" : ""}${ho.bias}.</div></div>
+    </div>
+    <h2 style="font-size:15px">סיווגי ייעוד הקרקע בשכונה — והעמודות שאין לנו</h2>
+    <table style="max-width:760px"><thead><tr><th>סיווג</th><th>מבנים</th>
+      <th>קומות מותרות</th><th>אחוזי בנייה</th></tr></thead><tbody>${cls}</tbody></table>`;
+}
+
+const sheets = { tabGap: "sheetGap", tabRest: "sheetRest" };
+const showMap = () => {
+  Object.values(sheets).forEach(id => document.getElementById(id).style.display = "none");
+  document.getElementById("legend").style.display = "block";
+  document.getElementById("caveat").style.display = "block";
+  document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("on"));
+  document.getElementById("tabMap").classList.add("on");
+};
+document.getElementById("tabMap").onclick = showMap;
+Object.entries(sheets).forEach(([tab, sheet]) => {
+  document.getElementById(tab).onclick = () => {
+    Object.values(sheets).forEach(id => document.getElementById(id).style.display = "none");
+    document.getElementById(sheet).style.display = "block";
+    document.getElementById("legend").style.display = "none";
+    document.getElementById("caveat").style.display = "none";
+    document.querySelectorAll("#tabs button").forEach(b => b.classList.remove("on"));
+    document.getElementById(tab).classList.add("on");
+  };
+});
+</script>
+</body>
+</html>

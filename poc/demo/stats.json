@@ -1,0 +1,17 @@
+{
+  "neighborhood": "הצפון הישן - החלק הצפוני",
+  "buildings_analyzed": 2318,
+  "buildings_with_gap": 931,
+  "gap_m2_headline": 357426,
+  "gap_m2_mixed_use": 66977,
+  "gap_m2_upside": 41825,
+  "net_low": 5808168824,
+  "net_high": 11616337649,
+  "net_low_mixed_use": 1088368304,
+  "net_high_mixed_use": 2176736608,
+  "pct_high_confidence": 58.8,
+  "price_per_m2": 65000,
+  "price_is_live": false,
+  "plan_code": "3616א",
+  "plan_effective": "2018-01-09"
+}

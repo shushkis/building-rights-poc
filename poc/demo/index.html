@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<title>זכויות בנייה לא מנוצלות — הצפון הישן, תל אביב</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<style>
+  :root{
+    --bg:#11131a; --panel:#181b24; --line:#272b38;
+    --ink:#eef1f7; --mute:#9aa3b8; --accent:#e8b64c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:"Segoe UI",Arial,Helvetica,sans-serif}
+  #map{position:absolute;inset:0}
+  .hud{position:absolute;z-index:5}
+
+  /* headline banner */
+  #banner{top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:1px;
+    background:var(--line);border-bottom:1px solid var(--line)}
+  #banner .cell{flex:1 1 160px;background:var(--panel);padding:10px 14px}
+  #banner .k{font-size:11px;color:var(--mute);letter-spacing:.04em}
+  #banner .v{font-size:21px;font-weight:700;margin-top:2px}
+  #banner .v small{font-size:12px;font-weight:400;color:var(--mute)}
+  #title{flex:1 1 100%;background:var(--panel);padding:9px 14px;
+    border-bottom:1px solid var(--line)}
+  #title b{font-size:14px}
+  #title span{color:var(--mute);font-size:12px}
+
+  /* legend */
+  #legend{bottom:22px;right:12px;background:var(--panel);border:1px solid var(--line);
+    border-radius:8px;padding:10px 12px;font-size:12px;min-width:190px}
+  #legend .row{display:flex;align-items:center;gap:8px;margin:4px 0}
+  #legend .sw{width:16px;height:12px;border-radius:2px;flex:none}
+  #legend h4{margin:0 0 7px;font-size:12px;color:var(--mute);font-weight:600}
+
+  /* tabs */
+  #tabs{top:96px;right:12px;display:flex;gap:6px}
+  #tabs button{background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:6px;padding:6px 13px;cursor:pointer;font-size:13px;font-family:inherit}
+  #tabs button.on{background:var(--accent);color:#1a1a1a;border-color:var(--accent);font-weight:600}
+
+  /* table panel */
+  #table{position:absolute;inset:96px 0 0 0;z-index:4;background:var(--bg);
+    overflow:auto;display:none;padding:14px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;
+    white-space:nowrap}
+  th{position:sticky;top:0;background:var(--panel);color:var(--mute);
+    font-weight:600;z-index:1}
+  tbody tr:hover{background:#1e2230;cursor:pointer}
+  .badge{display:inline-block;padding:1px 7px;border-radius:99px;font-size:11px;
+    border:1px solid transparent}
+  .HIGH{background:#123524;color:#5fd39a;border-color:#1d5c3f}
+  .MEDIUM{background:#3a3316;color:#e2c25c;border-color:#5f5224}
+  .LOW{background:#3d1f1f;color:#e88a8a;border-color:#5f2e2e}
+  .tier-mixed_use_unconfirmed{color:var(--accent)}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* popup */
+  .maplibregl-popup-content{background:var(--panel);color:var(--ink);
+    border:1px solid var(--line);border-radius:9px;padding:12px 14px;
+    font-size:13px;max-width:330px;direction:rtl;text-align:right}
+  .maplibregl-popup-tip{border-top-color:var(--panel)!important;
+    border-bottom-color:var(--panel)!important}
+  .pop h3{margin:0 0 3px;font-size:15px}
+  .pop .sub{color:var(--mute);font-size:11px;margin-bottom:9px}
+  .pop dl{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;margin:0}
+  .pop dt{color:var(--mute)}
+  .pop dd{margin:0;font-weight:600}
+  .pop .rule{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);
+    font-size:11px;color:var(--mute);line-height:1.45}
+  .pop code{background:#232838;padding:1px 5px;border-radius:3px;font-size:10px}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div class="hud" id="banner">
+  <div id="title"><b>זכויות בנייה לא מנוצלות — הצפון הישן (החלק הצפוני), תל אביב</b>
+    <span id="planline"></span></div>
+  <div class="cell"><div class="k">מבנים שנותחו</div><div class="v" id="s1">—</div></div>
+  <div class="cell"><div class="k">שטח לא מנוצל (מ״ר)</div><div class="v" id="s2">—</div></div>
+  <div class="cell"><div class="k">טווח שווי נטו</div><div class="v" id="s3">—</div></div>
+  <div class="cell"><div class="k">ברמת ודאות גבוהה</div><div class="v" id="s4">—</div></div>
+</div>
+
+<div class="hud" id="tabs">
+  <button id="tabMap" class="on">מפה</button>
+  <button id="tabList">50 המובילים</button>
+</div>
+
+<div id="table"><table id="t50"></table></div>
+
+<div class="hud" id="legend">
+  <h4>פער קומות</h4>
+  <div class="row"><span class="sw" style="background:#4a4f5e"></span> 0 / מוחרג</div>
+  <div class="row"><span class="sw" style="background:#f2c14e"></span> 1 קומה</div>
+  <div class="row"><span class="sw" style="background:#e2703a"></span> 2 קומות</div>
+  <div class="row"><span class="sw" style="background:#a4243b"></span> 3+ קומות</div>
+  <div class="row"><span class="sw" style="background:#7b5cd6"></span> שימוש מעורב (לא מאושר)</div>
+</div>
+
+<script>
+const NIS = n => {
+  if (n == null) return "—";
+  if (Math.abs(n) >= 1e9) return "₪" + (n/1e9).toFixed(2) + "B";
+  if (Math.abs(n) >= 1e6) return "₪" + (n/1e6).toFixed(1) + "M";
+  return "₪" + Math.round(n).toLocaleString("he-IL");
+};
+const NUM = n => n == null ? "—" : Math.round(n).toLocaleString("he-IL");
+
+const map = new maplibregl.Map({
+  container: "map",
+  style: {
+    version: 8,
+    sources: {
+      // CARTO began requiring an API key on basemaps.cartocdn.com; unauthenticated
+      // requests still return tiles but stamp "API KEY REQUIRED" across them, which
+      // is unusable in any published material. Stadia's Alidade Smooth Dark is the
+      // closest visual match and is free without a key from localhost.
+      // Previous (needs a CARTO key to use cleanly):
+      //   https://{a,b}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png
+      basemap: {
+        type: "raster",
+        tiles: ["https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}@2x.png"],
+        tileSize: 256,
+        attribution: "© Stadia Maps © OpenMapTiles © OpenStreetMap · נתונים: עיריית תל אביב-יפו"
+      }
+    },
+    layers: [{ id: "basemap", type: "raster", source: "basemap" }]
+  },
+  center: [34.7745, 32.0925],
+  zoom: 14.4
+});
+map.addControl(new maplibregl.NavigationControl({showCompass:false}), "top-left");
+
+const COLOR = [
+  "case",
+  ["==", ["get","tier"], "mixed_use_unconfirmed"], "#7b5cd6",
+  ["step", ["coalesce",["get","gap_floors"],0],
+    "#4a4f5e", 1, "#f2c14e", 2, "#e2703a", 3, "#a4243b"]
+];
+
+// Data loading is deliberately NOT gated on map "load": that event waits on
+// basemap tiles, so a slow or blocked tile CDN would leave the headline stats
+// and the top-50 table permanently empty. Style readiness is all the vector
+// layers actually need.
+// NOTE: do NOT gate on isStyleLoaded()/map "load" -- both stay false while
+// raster basemap tiles are still pending, so a slow or blocked tile CDN would
+// leave the building polygons permanently undrawn. "style.load" fires when the
+// style spec is parsed, which is all addSource/addLayer actually require.
+// A timeout fallback keeps the data visible even if that event is missed.
+// Adding a source requires MapLibre's style to be fully loaded. Neither the
+// "load" event nor a blind timeout is safe here: "load" also waits on basemap
+// raster tiles (which can be slow or blocked, leaving the buildings undrawn),
+// while firing early throws "Style is not done loading". So poll the exact
+// predicate addSource itself checks, with a generous ceiling.
+const whenStyleReady = async () => {
+  for (let i = 0; i < 600; i++) {
+    if (map.style && map.style._loaded) return true;
+    await new Promise(r => setTimeout(r, 100));
+  }
+  return false;
+};
+
+(async () => {
+  const [gj, stats, top50] = await Promise.all([
+    fetch("buildings.geojson").then(r=>r.json()),
+    fetch("stats.json").then(r=>r.json()),
+    fetch("top50.json").then(r=>r.json())
+  ]);
+
+  renderStats(stats);
+  renderTable(top50, gj);
+
+  if (!(await whenStyleReady())) throw new Error("MapLibre style never finished loading");
+  map.addSource("b", { type:"geojson", data:gj });
+  map.addLayer({ id:"fill", type:"fill", source:"b",
+    paint:{ "fill-color":COLOR, "fill-opacity":0.82 }});
+  map.addLayer({ id:"line", type:"line", source:"b",
+    paint:{ "line-color":"#0d0f15", "line-width":0.3 }});
+  map.addLayer({ id:"hl", type:"line", source:"b",
+    filter:["==","gush_helka",""],
+    paint:{ "line-color":"#ffffff", "line-width":2.2 }});
+
+  wireInteractions(gj);
+})().catch(e => {
+  document.getElementById("s1").textContent = "שגיאה";
+  console.error("demo load failed", e);
+});
+
+function renderStats(stats){
+  document.getElementById("s1").innerHTML =
+    NUM(stats.buildings_analyzed) + ' <small>מתוכם ' + NUM(stats.buildings_with_gap) + ' עם פער</small>';
+  document.getElementById("s2").innerHTML =
+    NUM(stats.gap_m2_headline) + ' <small>+' + NUM(stats.gap_m2_mixed_use) + ' מעורב</small>';
+  document.getElementById("s3").innerHTML =
+    NIS(stats.net_low) + "–" + NIS(stats.net_high);
+  document.getElementById("s4").innerHTML = stats.pct_high_confidence + "%";
+  document.getElementById("planline").textContent =
+    " · תא/" + stats.plan_code + " בתוקף מ־" + stats.plan_effective +
+    " · " + NIS(stats.price_per_m2) + "/מ״ר";
+}
+
+function wireInteractions(gj){
+  map.on("click", "fill", e => {
+    const p = e.features[0].properties;
+    const gap = Number(p.gap_floors || 0);
+    const tierNote = p.tier === "mixed_use_unconfirmed"
+      ? '<div class="rule" style="color:#b39ae8">שימוש מעורב על ציר ראשי — הזכאות למגורים טעונה אישור פרטני מול מסמכי התכנית.</div>'
+      : "";
+    const excl = p.exclusion_reasons
+      ? '<div class="rule">מוחרג: <code>' + p.exclusion_reasons + '</code></div>' : "";
+    // A building can be entitled to more floors yet show a zero gap because its
+    // rights were already exercised. Say so, rather than leaving a silent zero.
+    const consumed = (p.rights_consumed && p.rights_consumed !== "none")
+      ? '<div class="rule">זכויות נוצלו: <b>' + p.rights_consumed + '</b>' +
+        (p.rights_consumed === "likely_full"
+          ? ' — קיים היתר/תמ״א 38, הפער אופס.'
+          : ' — הפער הוקטן.') + '</div>'
+      : "";
+    new maplibregl.Popup({maxWidth:"340px"})
+      .setLngLat(e.lngLat)
+      .setHTML(`
+        <div class="pop">
+          <h3>${p.street || "ללא כתובת"} ${p.house_num ?? ""}</h3>
+          <div class="sub">גוש/חלקה ${p.gush_helka || "—"}${p.year ? " · נבנה " + p.year : ""}</div>
+          <dl>
+            <dt>קומות קיימות</dt><dd>${p.floors_est ?? "—"}</dd>
+            <dt>קומות מותרות</dt><dd>${p.allowed_floors ?? "—"}</dd>
+            <dt>פער</dt><dd>${gap} קומות · ${NUM(p.gap_m2)} מ״ר</dd>
+            <dt>שווי נטו</dt><dd>${NIS(p.net_low)} – ${NIS(p.net_high)}</dd>
+            <dt>ודאות</dt><dd><span class="badge ${p.confidence}">${p.confidence}</span></dd>
+          </dl>
+          <div class="rule"><code>${p.rule_id}</code><br>${p.rule_description || ""}</div>
+          ${tierNote}${consumed}${excl}
+        </div>`)
+      .addTo(map);
+  });
+  map.on("mouseenter","fill",()=>map.getCanvas().style.cursor="pointer");
+  map.on("mouseleave","fill",()=>map.getCanvas().style.cursor="");
+}
+
+function renderTable(top50, gj){
+  const head = ["#","כתובת","גוש/חלקה","קומות","מותר","פער מ״ר","שווי נטו (נמוך)","ודאות","סעיף"];
+  let html = "<thead><tr>" + head.map(h=>`<th>${h}</th>`).join("") + "</tr></thead><tbody>";
+  top50.forEach((r,i)=>{
+    html += `<tr data-gh="${r.gush_helka||""}">
+      <td class="num">${i+1}</td>
+      <td>${r.street||""} ${r.house_num??""}</td>
+      <td class="num">${r.gush_helka||"—"}</td>
+      <td class="num">${r.floors_est??"—"}</td>
+      <td class="num">${r.allowed_floors??"—"}</td>
+      <td class="num">${NUM(r.gap_m2)}</td>
+      <td class="num">${NIS(r.net_low)}</td>
+      <td><span class="badge ${r.confidence}">${r.confidence}</span></td>
+      <td class="tier-${r.tier}"><code>${r.rule_id}</code></td></tr>`;
+  });
+  document.getElementById("t50").innerHTML = html + "</tbody>";
+
+  document.querySelectorAll("#t50 tbody tr").forEach(tr=>{
+    tr.onclick = () => {
+      const gh = tr.dataset.gh;
+      map.setFilter("hl", ["==","gush_helka",gh]);
+      showMap();
+      const f = gj.features.find(x=>x.properties.gush_helka===gh);
+      if (f) {
+        const cs = f.geometry.coordinates.flat(3);
+        let x=0,y=0,n=0;
+        for (let i=0;i<cs.length;i+=2){ x+=cs[i]; y+=cs[i+1]; n++; }
+        map.flyTo({center:[x/n,y/n], zoom:17.5});
+      }
+    };
+  });
+}
+
+const showMap = () => {
+  document.getElementById("table").style.display="none";
+  document.getElementById("legend").style.display="block";
+  document.getElementById("tabMap").classList.add("on");
+  document.getElementById("tabList").classList.remove("on");
+};
+document.getElementById("tabMap").onclick = showMap;
+document.getElementById("tabList").onclick = () => {
+  document.getElementById("table").style.display="block";
+  document.getElementById("legend").style.display="none";
+  document.getElementById("tabList").classList.add("on");
+  document.getElementById("tabMap").classList.remove("on");
+};
+</script>
+</body>
+</html>

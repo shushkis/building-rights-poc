@@ -1,0 +1,93 @@
+{
+  "neighborhood": "בית הכרם, ירושלים",
+  "neighborhood_en": "Beit HaKerem, Jerusalem",
+  "buildings_analyzed": 1100,
+  "buildings_in_bbox": 1859,
+  "with_municipal_floors": 996,
+  "with_derived_only": 104,
+  "pct_municipal": 90.5,
+  "apartments": 7821,
+  "median_m_per_floor": 3.83,
+  "fallback_sd": 2.95,
+  "fallback_train_n": 498,
+  "fallback_heldout": {
+    "n": 498,
+    "exact_pct": 46.0,
+    "within1_pct": 83.9,
+    "mae": 0.85,
+    "bias": 0.29,
+    "dist": {
+      "-5": 2,
+      "-4": 1,
+      "-3": 3,
+      "-2": 14,
+      "-1": 89,
+      "0": 229,
+      "1": 100,
+      "2": 27,
+      "3": 21,
+      "4": 6,
+      "5": 2,
+      "6": 2,
+      "10": 2
+    }
+  },
+  "renewal_files": 105,
+  "renewal_tama38": 83,
+  "renewal_pinui": 22,
+  "renewal_unplaced": 8,
+  "buildings_with_gap": 107,
+  "tiers": {
+    "granted": {
+      "files": 16,
+      "buildings": 8,
+      "units_existing": 140,
+      "units_added": 114
+    },
+    "approved": {
+      "files": 11,
+      "buildings": 8,
+      "units_existing": 95,
+      "units_added": 83
+    },
+    "planning": {
+      "files": 61,
+      "buildings": 91,
+      "units_existing": 1582,
+      "units_added": 3364
+    }
+  },
+  "units_added_headline": 197,
+  "buildings_headline": 16,
+  "units_added_planning": 3364,
+  "gap_rows": 88,
+  "gap_rows_unplaced": 6,
+  "units_headline_unplaced": 40,
+  "buildings_without_entitlement": 993,
+  "with_join_key": 920,
+  "units_existing": 1829,
+  "units_added": 3561,
+  "units_uplift_pct": 194.7,
+  "plans_overlapping": 140,
+  "landuse_classes": {
+    "5 מגורים": 345,
+    "1 מגורים": 149,
+    "2 מגורים": 101,
+    "מגורים 2 מיוחד": 65,
+    "מגורים ב'": 58,
+    "שטח לבנין ציבורי": 50,
+    "דרך מאושרת/קיימת": 49,
+    "מגורים מיוחד": 26,
+    "מגורים ד'": 23,
+    "דרך חדשה/הרחבה": 17,
+    "יעוד עפ\"י תכנית מאוש": 17,
+    "מוסד": 14
+  },
+  "renewal_status": {
+    "תכנון - טרם כניסה לרישוי": 51,
+    "הופק הוצא היתר": 18,
+    "היתר אושר בועדת רישוי": 11,
+    "נפתח תיק היתר": 3
+  },
+  "source": "Jerusalem Municipality public ArcGIS Server (gisviewer.jerusalem.muni.il), layers 370 buildings-2022, 63 TAMA 38, 183 clearance schemes, 50 compiled land use, 46 parcels, 49 plan boundaries, 40 neighbourhoods"
+}
