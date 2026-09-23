@@ -1,3 +1,5 @@
 [tool.pytest.ini_options]
 testpaths = ["poc/tests"]
 pythonpath = ["."]
+[tool.vercel]
+entrypoint = "my_package.api:app"
