@@ -10,3 +10,7 @@ venv/
 poc/data/raw/
 poc/demo-jerusalem/_cache*.json
 *.bak
+
+# Vercel build output and local link
+public/
+.vercel
